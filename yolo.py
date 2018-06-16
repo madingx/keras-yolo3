@@ -114,6 +114,7 @@ class YOLO(object):
                     size=np.floor(3e-2 * image.size[1] + 0.5).astype('int32'))
         thickness = (image.size[0] + image.size[1]) // 300
 
+        boxes1 = []
         for i, c in reversed(list(enumerate(out_classes))):
             predicted_class = self.class_names[c]
             box = out_boxes[i]
@@ -145,10 +146,10 @@ class YOLO(object):
                 fill=self.colors[c])
             draw.text(text_origin, label, fill=(0, 0, 0), font=font)
             del draw
-
+            boxes1.append([predicted_class,left,top,right-left,bottom-top])
         end = timer()
         print(end - start)
-        return image
+        return image,boxes1
 
     def close_session(self):
         self.sess.close()
@@ -209,7 +210,30 @@ def detect_img(yolo):
             r_image.show()
     yolo.close_session()
 
+def detect_batchimg(yolo):    
+    #imgpath = input('Input image file path:')
+    imgpath = 'Satellite_test/'
+    image_names = sorted(os.listdir(imgpath))
+    outpath = 'result-1234/'
+    if not os.path.exists(outpath):
+        os.mkdir(outpath)
+    f = open(outpath+'result.txt','w',encoding='utf-8')
+    for i in image_names:
+        if i[-3:] != 'jpg':continue
+        try:
+            image = Image.open(i)
+        except:
+            print('Open Error! Try again!')
+            continue
+        else:
+            r_image,boxes = yolo.detect_image(image)
+            if boxes is not None:
+                for j in boxes:
+                    f.write(i+','+j[0]+','+j[1]+' '+j[2]+' '+j[3]+' '+j[4]+'\n')
 
+            #r_image.show()
+    f.close()
+    yolo.close_session()
 
 if __name__ == '__main__':
     detect_img(YOLO())
