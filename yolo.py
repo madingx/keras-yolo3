@@ -6,7 +6,6 @@ Run a YOLO_v3 style detection model on test images.
 
 import colorsys
 import os
-import random
 from timeit import default_timer as timer
 
 import numpy as np
@@ -24,7 +23,7 @@ class YOLO(object):
         self.anchors_path = 'model_data/yolo_anchors.txt'
         self.classes_path = 'model_data/coco_classes.txt'
         self.score = 0.3
-        self.iou = 0.5
+        self.iou = 0.45
         self.class_names = self._get_class()
         self.anchors = self._get_anchors()
         self.sess = K.get_session()
@@ -73,9 +72,9 @@ class YOLO(object):
         self.colors = list(
             map(lambda x: (int(x[0] * 255), int(x[1] * 255), int(x[2] * 255)),
                 self.colors))
-        random.seed(10101)  # Fixed seed for consistent colors across runs.
-        random.shuffle(self.colors)  # Shuffle colors to decorrelate adjacent classes.
-        random.seed(None)  # Reset seed to default.
+        np.random.seed(10101)  # Fixed seed for consistent colors across runs.
+        np.random.shuffle(self.colors)  # Shuffle colors to decorrelate adjacent classes.
+        np.random.seed(None)  # Reset seed to default.
 
         # Generate output tensor targets for filtered bounding boxes.
         self.input_image_shape = K.placeholder(shape=(2, ))
@@ -155,11 +154,19 @@ class YOLO(object):
         self.sess.close()
 
 
-def detect_video(yolo, video_path):
+def detect_video(yolo, video_path, output_path=""):
     import cv2
     vid = cv2.VideoCapture(video_path)
     if not vid.isOpened():
         raise IOError("Couldn't open webcam or video")
+    video_FourCC    = int(vid.get(cv2.CAP_PROP_FOURCC))
+    video_fps       = vid.get(cv2.CAP_PROP_FPS)
+    video_size      = (int(vid.get(cv2.CAP_PROP_FRAME_WIDTH)),
+                        int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+    isOutput = True if output_path != "" else False
+    if isOutput:
+        print("!!! TYPE:", type(output_path), type(video_FourCC), type(video_fps), type(video_size))
+        out = cv2.VideoWriter(output_path, video_FourCC, video_fps, video_size)
     accum_time = 0
     curr_fps = 0
     fps = "FPS: ??"
@@ -182,6 +189,8 @@ def detect_video(yolo, video_path):
                     fontScale=0.50, color=(255, 0, 0), thickness=2)
         cv2.namedWindow("result", cv2.WINDOW_NORMAL)
         cv2.imshow("result", result)
+        if isOutput:
+            out.write(result)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     yolo.close_session()
