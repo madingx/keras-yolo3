@@ -19,9 +19,9 @@ from yolo3.utils import letterbox_image
 
 class YOLO(object):
     def __init__(self):
-        self.model_path = 'model_data/yolo.h5' # model path or trained weights path
+        self.model_path = 'model_data/trained_weights_stage_1.h5' # model path or trained weights path
         self.anchors_path = 'model_data/yolo_anchors.txt'
-        self.classes_path = 'model_data/coco_classes.txt'
+        self.classes_path = 'model_data/sate_classes.txt'
         self.score = 0.3
         self.iou = 0.45
         self.class_names = self._get_class()
@@ -210,6 +210,8 @@ def detect_img(yolo):
             r_image.show()
     yolo.close_session()
 
+
+classes = ["airport", "bridge", "harbor"]
 def detect_batchimg(yolo):    
     #imgpath = input('Input image file path:')
     imgpath = 'Satellite_test/'
@@ -217,23 +219,26 @@ def detect_batchimg(yolo):
     outpath = 'result-1234/'
     if not os.path.exists(outpath):
         os.mkdir(outpath)
-    f = open(outpath+'result.txt','w',encoding='utf-8')
+    f = open(outpath+'result2.txt','w',encoding='utf-8')
     for i in image_names:
         if i[-3:] != 'jpg':continue
         try:
-            image = Image.open(i)
+            image = Image.open(imgpath+i)
         except:
-            print('Open Error! Try again!')
+            print(i+' Open Error! Try again!')
             continue
         else:
             r_image,boxes = yolo.detect_image(image)
             if boxes is not None:
                 for j in boxes:
-                    f.write(i+','+j[0]+','+j[1]+' '+j[2]+' '+j[3]+' '+j[4]+'\n')
+                    print(j)
+                    if str(j[0]) not in classes:
+                        continue
+                    f.write(i+','+str(j[0])+','+str(j[1])+' '+str(j[2])+' '+str(j[3])+' '+str(j[4])+'\n')
 
             #r_image.show()
     f.close()
     yolo.close_session()
 
 if __name__ == '__main__':
-    detect_img(YOLO())
+    detect_batchimg(YOLO())
